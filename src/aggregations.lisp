@@ -16,21 +16,21 @@
 ;; License along with Eclastic.  If not, see
 ;; <http://www.gnu.org/licenses/>.
 
-(defpackage :cl-arango-system (:use :cl :asdf))
-(in-package :cl-arango-system)
+(in-package #:cl-user)
+(defpackage #:eclastic.aggregations
+  (:use #:cl
+        #:eclastic.util)
+  (:import-from #:yason
+                #:encode
+                #:encode-slots
+                #:encode-object
+                #:encode-object-element
+                #:with-array
+                #:encode-array-elements
+                #:with-object
+                #:with-object-element
+                #:with-output-to-string*
+                #:*json-output*))
 
-(defsystem eclastic
-  :name "Eclastic"
-  :author "Grim Schjetne <grim@schjetne.se"
-  :description "Elasticsearch client library"
-  :depends-on (:drakma
-               :yason
-               :flexi-streams)
-  :components
-  ((:module "src"
-            :serial t
-            :components
-            ((:file "util")
-             (:file "query")
-             (:file "aggregations")
-             (:file "main")))))
+(in-package #:eclastic.aggregations)
+

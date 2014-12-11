@@ -42,7 +42,8 @@
   ())
 
 (defclass <filter> ()
-  ())
+  ((in-filter-position :initform nil
+                       :accessor in-filter-position)))
 
 (defgeneric encode-subquery (subquery))
 
@@ -147,13 +148,14 @@
 (defmethod encode-slots progn ((this <bool>))
   (with-object-element ("bool")
     (with-object ()
-      (with-object-element* ("must")
+      (with-object-element* ("must" (must this))
         (encode-subquery (must this)))
-      (with-object-element* ("must_not")
+      (with-object-element* ("must_not" (must-not this))
         (encode-subquery (must-not this)))
-      (with-object-element* ("should")
+      (with-object-element* ("should" (must-not this))
         (encode-subquery (should this)))
-      (encode-object-element* "minimum_should_match" (minimum-should-match this))
+      (encode-object-element* "minimum_should_match"
+                              (minimum-should-match this))
       (encode-object-element* "boost" (boost this)))))
 
 (defun bool (&key must must-not should minimum-should-match boost)
@@ -200,7 +202,10 @@
                                    (:random-access-always
                                     "random_access_always"))))))
 
-(defclass <terms> (<field-query> <list-query> <minimum-should-match-query>)
+(defclass <terms> (<field-query>
+                   <list-query>
+                   <minimum-should-match-query>
+                   <filter>)
   ())
 
 (defmethod encode-slots progn ((this <terms>))

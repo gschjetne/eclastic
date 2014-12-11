@@ -20,6 +20,7 @@
 (defpackage #:eclastic
   (:use #:cl
         #:eclastic.query
+        #:eclastic.aggregations
         #:eclastic.util)
   (:import-from #:yason
                 #:parse
@@ -175,7 +176,7 @@
     (values (mapcar #'hash-to-document
                                        (gethash "hits"
                                                 hits))
-            (list :num-hits (gethash "total" hits)
+            (list :hits (gethash "total" hits)
                   :shards (list :total (gethash "total" shards)
                                 :failed (gethash "successful" shards)
                                 :successful (gethash "failed" shards))
