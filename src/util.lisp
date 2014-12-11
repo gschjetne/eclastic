@@ -17,7 +17,7 @@
 ;; <http://www.gnu.org/licenses/>.
 
 (in-package #:cl-user)
-(defpackage #:elastic.util
+(defpackage #:eclastic.util
   (:use #:cl)
   (:import-from #:yason
                 #:encode-object-element
@@ -25,7 +25,7 @@
   (:export #:encode-object-element*
            #:with-object-element*))
 
-(in-package #:elastic.util)
+(in-package #:eclastic.util)
 
 (defmacro encode-object-element* (key value)
   `(when ,value

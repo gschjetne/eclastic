@@ -17,10 +17,10 @@
 ;; <http://www.gnu.org/licenses/>.
 
 (in-package #:cl-user)
-(defpackage #:elastic
+(defpackage #:eclastic
   (:use #:cl
-        #:elastic.query
-        #:elastic.util)
+        #:eclastic.query
+        #:eclastic.util)
   (:import-from #:yason
                 #:parse
                 #:encode
@@ -45,7 +45,7 @@
            #:<type>
            #:<search>))
 
-(in-package #:elastic)
+(in-package #:eclastic)
 
 (defclass <server> ()
   ((host :initarg :host

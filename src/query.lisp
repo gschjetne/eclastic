@@ -17,9 +17,9 @@
 ;; <http://www.gnu.org/licenses/>.
 
 (in-package #:cl-user)
-(defpackage #:elastic.query
+(defpackage #:eclastic.query
   (:use #:cl
-        #:elastic.util)
+        #:eclastic.util)
   (:import-from #:yason
                 #:encode
                 #:encode-slots
@@ -36,7 +36,7 @@
            #:filtered
            #:terms))
 
-(in-package #:elastic.query)
+(in-package #:eclastic.query)
 
 (defclass <query> ()
   ())
