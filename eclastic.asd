@@ -16,13 +16,14 @@
 ;; License along with Eclastic.  If not, see
 ;; <http://www.gnu.org/licenses/>.
 
-(defpackage :cl-arango-system (:use :cl :asdf))
-(in-package :cl-arango-system)
+(defpackage :cl-eclastic-system (:use :cl :asdf))
+(in-package :cl-eclastic-system)
 
 (defsystem eclastic
   :name "Eclastic"
   :author "Grim Schjetne <grim@schjetne.se"
   :description "Elasticsearch client library"
+  :license "LGPLv3+"
   :depends-on (:drakma
                :yason
                :flexi-streams)
