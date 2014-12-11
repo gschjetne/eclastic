@@ -196,3 +196,7 @@
 
 (defun document-by-id (place id)
   (get* place (make-instance '<document> :id id)))
+
+(defun inspect-json (object &optional (stream *standard-output*))
+  (yason:with-output (stream :indent t)
+    (encode-object object)))

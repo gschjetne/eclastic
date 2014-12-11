@@ -33,17 +33,10 @@
                 #:*json-output*)
   (:export #:match
            #:bool
-           #:filtered))
+           #:filtered
+           #:terms))
 
 (in-package #:elastic.query)
-
-(defmacro encode-object-element* (key value)
-  `(when ,value
-     (encode-object-element ,key ,value)))
-
-(defmacro with-object-element* ((key) &body body)
-  `(when ,key
-     (with-object-element (,key) ,@body)))
 
 (defclass <query> ()
   ())
@@ -64,6 +57,10 @@
 (defclass <string-query> (<query>)
   ((query-string :initarg :query-string
                  :reader query-string)))
+
+(defclass <list-query> (<query>)
+  ((query-list :initarg :query-list
+               :reader query-list)))
 
 (defclass <fuzzy-query> (<query>)
   ((fuzziness :initarg :fuzziness
@@ -89,6 +86,10 @@
   ((boost :initarg :boost
           :reader boost)))
 
+(defclass <minimum-should-match-query> (<query>)
+  ((minimum-should-match :initarg :minimum-should-match
+                   :reader minimum-should-match)))
+
 (defclass <match> (<string-query>
                    <fuzzy-query>
                    <boolean-query>
@@ -111,36 +112,37 @@
                                   (cutoff-frequency this)))))))
 
 (defun match (query-string field &key
-                                   (operator :or)
+                                   operator
                                    (type :match)
                                    fuzziness
-                                   (zero-terms-query :none)
+                                   zero-terms-query
                                    cutoff-frequency)
   (make-instance '<match>
                  :query-string query-string
                  :search-field field
-                 :operator (ecase operator
-                             (:or "or")
-                             (:and "and"))
-                 :match-type (ecase type
-                               (:match "match")
-                               (:match-phrase "match_phrase")
-                               (:match-phrase-prefix "match-phrase-prefix"))
+                 :operator (when operator
+                             (ecase operator
+                               (:or "or")
+                               (:and "and")))
+                 :match-type (when type
+                               (ecase type
+                                 (:match "match")
+                                 (:match-phrase "match_phrase")
+                                 (:match-phrase-prefix "match-phrase-prefix")))
                  :fuzziness fuzziness
-                 :zero-terms-query (ecase zero-terms-query
-                                     (:none "none")
-                                     (:all "all"))
+                 :zero-terms-query (when zero-terms-query
+                                     (ecase zero-terms-query
+                                       (:none "none")
+                                       (:all "all")))
                  :cutoff-frequency cutoff-frequency))
 
-(defclass <bool> (<boost-query> <filter>)
+(defclass <bool> (<boost-query> <filter> <minimum-should-match-query>)
   ((must :initarg :must
          :reader must)
    (must-not :initarg :must-not
                :reader must-not)
    (should :initarg :should
-           :reader should)
-   (minimum-should :initarg :minimum-should
-                   :reader minimum-should)))
+           :reader should)))
 
 (defmethod encode-slots progn ((this <bool>))
   (with-object-element ("bool")
@@ -151,15 +153,15 @@
         (encode-subquery (must-not this)))
       (with-object-element* ("should")
         (encode-subquery (should this)))
-      (encode-object-element* "minimum_should_match" (minimum-should this))
+      (encode-object-element* "minimum_should_match" (minimum-should-match this))
       (encode-object-element* "boost" (boost this)))))
 
-(defun bool (&key must must-not should minimum-should boost)
+(defun bool (&key must must-not should minimum-should-match boost)
   (make-instance '<bool>
                  :must must
                  :must-not must-not
                  :should should
-                 :minimum-should minimum-should
+                 :minimum-should-match minimum-should-match
                  :boost boost))
 
 (defclass <filtered> (<query>)
@@ -173,13 +175,13 @@
 (defmethod encode-slots progn ((this <filtered>))
   (with-object-element ("filtered")
     (with-object ()
-      (with-object-element ("query")
+      (with-object-element* ("query" (query this))
         (encode-object (query this)))
       (with-object-element ("filter")
         (encode-object (filter this)))
       (encode-object-element* "strategy" (strategy this)))))
 
-(defun filtered (query filter &key strategy)
+(defun filtered (&key filter query strategy)
   (make-instance '<filtered>
                  :query query
                  :filter filter
@@ -197,3 +199,21 @@
                                     "query_first")
                                    (:random-access-always
                                     "random_access_always"))))))
+
+(defclass <terms> (<field-query> <list-query> <minimum-should-match-query>)
+  ())
+
+(defmethod encode-slots progn ((this <terms>))
+  (with-object-element ("terms")
+    (with-object ()
+      (with-object-element ((search-field this))
+        (with-array ()
+          (apply #'encode-array-elements (query-list this))))
+      (encode-object-element* "minimum_should_match"
+                              (minimum-should-match this)))))
+
+(defun terms (query-list field &key minimum-should-match)
+  (make-instance '<terms>
+                 :search-field field
+                 :query-list query-list
+                 :minimum-should-match minimum-should-match))

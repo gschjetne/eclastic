@@ -31,6 +31,6 @@
   `(when ,value
      (encode-object-element ,key ,value)))
 
-(defmacro with-object-element* ((key) &body body)
-  `(when ,key
+(defmacro with-object-element* ((key predicate) &body body)
+  `(when ,predicate
      (with-object-element (,key) ,@body)))
