@@ -1,0 +1,62 @@
+* Eclastic
+  A library for interfacing with [[http://www.elasticsearch.org/][elasticsearch]]
+** Introduction
+   These are the humble beginnings of an elasticseach client in
+   Common Lisp.
+
+** Examples
+*** Setup
+    Tell Eclastic of a place to send requests, whether a server, an
+    index or a type within an index:
+
+#+BEGIN_SRC lisp
+  (defparameter *my-documents* (make-instance '<type>
+                                              :type "whatever"
+                                              :index "highway"
+                                              :host "localhost"
+                                              :port 9200))
+#+END_SRC
+
+*** Fetching a document
+    Asks the server for a document. If none exists, it still returns
+    an empty document, but a warning is signalled:
+
+#+BEGIN_SRC lisp
+  (document-by-id *my-documents* "1")
+  
+  ;; => #<<DOCUMENT> /highway/whatever/1 {10083980C3}>
+  
+  (handler-case (document-by-id *my-documents* "no-such-doc")
+    (document-not-found "Sorry, I couldn't find that document"))
+  
+  ;; => "Sorry, I couldn't find that document"
+  
+#+END_SRC
+
+*** Searching
+    The query language will be accessible with native Lisp syntax:
+#+BEGIN_SRC lisp
+  (get* *my-documents*
+        (new-search (match "adventure" "_all")))
+  
+  ;; => (#<<DOCUMENT> /highway/whatever/321 {10071F58E3}>
+  ;;     #<<DOCUMENT> /highway/whatever/412 {10071F5963}>
+  ;;     #<<DOCUMENT> /highway/whatever/431 {10071F59E3}>)
+  ;;    (:NUM-HITS 3 :SHARDS (:TOTAL 5 :FAILED 5 :SUCCESSFUL 0) 
+  ;;     :TIMED-OUT NIL :TOOK 3)
+#+END_SRC
+
+** License
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as
+   published by the Free Software Foundation, either version 3 of the
+   License, or (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.
+   
+   You should have received a copy of the GNU Lesser General Public
+   License along with this program.  If not, see
+   <http://www.gnu.org/licenses/>.
