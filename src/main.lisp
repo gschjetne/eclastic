@@ -157,7 +157,7 @@
             (list (cons "query_cache" it))))))
 
 (defun new-search (query &key aggregations timeout
-                           from size search-type 
+                           from size search-type
                            query-cache terminate-after
                            suggestions)
   (make-instance '<search>
@@ -215,9 +215,7 @@
                         :parameters (get-query-params query)))
          (hits (gethash "hits" result))
          (shards (gethash "_shards" result)))
-    (values (mapcar #'hash-to-document
-                                       (gethash "hits"
-                                                hits))
+    (values (mapcar #'hash-to-document (gethash "hits" hits))
             (gethash "aggregations" result)
             (list :hits (gethash "total" hits)
                   :shards (list :total (gethash "total" shards)
