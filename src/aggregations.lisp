@@ -32,7 +32,8 @@
                 #:with-output-to-string*
                 #:*json-output*)
   (:export #:min*
-           #:max*))
+           #:max*
+           #:percentiles))
 
 (in-package #:eclastic.aggregations)
 
@@ -78,3 +79,21 @@
                  :aggregate-field field
                  :aggregate-script script))
 
+(defclass <percentiles> (<metric-aggregation> <field-or-script-aggregation>)
+  ((percents :initarg :percents
+             :reader percents)))
+
+(defmethod encode-slots progn ((this <percentiles>))
+  (with-object-element ("percentiles")
+    (with-object ()
+      (encode-object-element* "field" (aggregate-field this))
+      (encode-object-element* "script" (aggregate-script this))
+      (with-object-element* ("percents" (percents this))
+        (with-array ()
+          (apply #'encode-array-elements (percents this)))))))
+
+(defun percentiles (&key field script percents)
+  (make-instance '<percentiles>
+                 :aggregate-field field
+                 :aggregate-script script
+                 :percents percents))
