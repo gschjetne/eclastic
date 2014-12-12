@@ -131,10 +131,12 @@
    (query-cache :initarg :query-cache
                 :reader query-cache)
    (terminate-after :initarg :terminate-after
-                    :reader terminate-after)))
+                    :reader terminate-after)
+   (aggregations :initarg :aggregations
+                 :reader aggregations)))
 
-(defun new-search (query &key
-                           timeout from size search-type
+(defun new-search (query &key aggregations timeout
+                           from size search-type 
                            query-cache terminate-after)
   (make-instance '<search>
                  :query query
@@ -155,7 +157,8 @@
                                 (ecase query-cache
                                   (:enable 'yason:true)
                                   (:disable 'yason:false)))
-                 :terminate-after terminate-after))
+                 :terminate-after terminate-after
+                 :aggregations aggregations))
 
 (defmethod encode-slots progn ((this <search>))
   (with-object-element ("query")
@@ -163,7 +166,12 @@
   (encode-object-element* "timeout" (timeout this))
   (encode-object-element* "from" (from this))
   (encode-object-element* "size" (size this))
-  (encode-object-element* "terminate_after" (terminate-after this)))
+  (encode-object-element* "terminate_after" (terminate-after this))
+  (with-object-element* ("aggregations" (aggregations this))
+    (with-object ()
+      (loop for pair in (aggregations this) do
+           (with-object-element ((car pair))
+             (encode-object (cdr pair)))))))
 
 (defmethod get* ((place <server>) (query <search>))
   (let* ((result
@@ -176,6 +184,7 @@
     (values (mapcar #'hash-to-document
                                        (gethash "hits"
                                                 hits))
+            (gethash "aggregations" result)
             (list :hits (gethash "total" hits)
                   :shards (list :total (gethash "total" shards)
                                 :failed (gethash "successful" shards)

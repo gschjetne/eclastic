@@ -30,7 +30,51 @@
                 #:with-object
                 #:with-object-element
                 #:with-output-to-string*
-                #:*json-output*))
+                #:*json-output*)
+  (:export #:min*
+           #:max*))
 
 (in-package #:eclastic.aggregations)
+
+(defclass <aggregation> ()
+  ())
+
+(defclass <metric-aggregation> (<aggregation>)
+  ())
+
+(defclass <bucket-aggregation> (<aggregation>)
+  ())
+
+(defclass <field-or-script-aggregation> (<aggregation>)
+  ((aggregate-field :initarg :aggregate-field
+                    :reader aggregate-field)
+   (aggregate-script :initarg :aggregate-script
+                     :reader aggregate-script)))
+
+(defmethod encode-slots progn ((this <field-or-script-aggregation>))
+  (when (and (aggregate-field this)
+             (aggregate-script this))
+    (error "Field and script are mutually exclusive")))
+
+(defclass <min-or-max> (<metric-aggregation> <field-or-script-aggregation>)
+  ((min-or-max :initarg :min-or-max
+               :accessor min-or-max)))
+
+(defmethod encode-slots progn ((this <min-or-max>))
+  (with-object-element ((min-or-max this))
+    (with-object ()
+      (encode-object-element* "field" (aggregate-field this))
+      (encode-object-element* "script" (aggregate-script this)))))
+
+(defun min* (&key field script)
+  (make-instance '<min-or-max>
+                 :min-or-max "min"
+                 :aggregate-field field
+                 :aggregate-script script))
+
+(defun max* (&key field script)
+  (make-instance '<min-or-max>
+                 :min-or-max "max"
+                 :aggregate-field field
+                 :aggregate-script script))
 
