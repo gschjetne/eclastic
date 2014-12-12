@@ -31,9 +31,15 @@
                 :with-object-element
                 :with-output-to-string*
                 :*json-output*)
-  (:export :min*
+  (:export :<min-or-max>
+           :<percentiles>
+           :<cardinality>
+           :<terms>
+           :min*
            :max*
-           :percentiles))
+           :percentiles
+           :cardinality
+           :terms))
 
 (in-package :eclastic.aggregations)
 
@@ -55,7 +61,10 @@
 (defmethod encode-slots progn ((this <field-or-script-aggregation>))
   (when (and (aggregate-field this)
              (aggregate-script this))
-    (error "Field and script are mutually exclusive")))
+    (error "Field and script are mutually exclusive"))
+  (unless (or (aggregate-field this)
+              (aggregate-script this))
+    (error "Either field or script is required")))
 
 (defclass <min-or-max> (<metric-aggregation> <field-or-script-aggregation>)
   ((min-or-max :initarg :min-or-max
@@ -97,3 +106,41 @@
                  :aggregate-field field
                  :aggregate-script script
                  :percents percents))
+
+(defclass <cardinality> (<metric-aggregation> <field-or-script-aggregation>)
+  ((precision-threshold :initarg :precision-threshold
+                        :reader precision-threshold)
+   (rehash :initarg :rehash
+           :reader rehash)))
+
+(defmethod encode-slots progn ((this <cardinality>))
+  (with-object-element ("cardinality")
+    (with-object ()
+      (encode-object-element* "field" (aggregate-field this))
+      (encode-object-element* "script" (aggregate-script this))
+      (encode-object-element* "precision_threshold" (precision-threshold this))
+      (encode-object-element* "rehash" (rehash this)))))
+
+(defun cardinality (&key field script precision-threshold rehash)
+  (make-instance '<cardinality>
+                 :aggregate-field field
+                 :aggregate-script script
+                 :precision-threshold precision-threshold
+                 :rehash (when rehash
+                           (ecase rehash
+                             (:yes 'yason.true)
+                             (:no 'yason.false)))))
+
+(defclass <terms> (<bucket-aggregation> <field-or-script-aggregation>)
+  ())
+
+(defmethod encode-slots progn ((this <terms>))
+  (with-object-element ("terms")
+    (with-object ()
+      (encode-object-element* "field" (aggregate-field this))
+      (encode-object-element* "script" (aggregate-script this)))))
+
+(defun terms (&key field script)
+  (make-instance '<terms>
+                 :aggregate-field field
+                 :aggregate-script script))
