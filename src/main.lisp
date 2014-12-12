@@ -36,6 +36,9 @@
                 :http-request)
   (:import-from :flexi-streams
                 :octets-to-string)
+  (:import-from :anaphora
+                :awhen
+                :it)
   (:export :get*
            :new-search
            :document-by-id
@@ -63,14 +66,15 @@
           (host this)
           (port this)))
 
-(defun send-request (uri method &optional data)
+(defun send-request (uri method &key data parameters)
   (parse
    (octets-to-string
     (http-request uri
                   :method method
                   :content data
                   :content-type "application/json"
-                  :external-format-out :utf-8)
+                  :external-format-out :utf-8
+                  :parameters parameters)
     :external-format :utf-8)))
 
 (defclass <index> (<server>)
@@ -128,12 +132,19 @@
    (size :initarg :size
          :reader size)
    (search-type :initarg :search-type)
-   (query-cache :initarg :query-cache
-                :reader query-cache)
+   (query-cache :initarg :query-cache)
    (terminate-after :initarg :terminate-after
                     :reader terminate-after)
    (aggregations :initarg :aggregations
                  :reader aggregations)))
+
+(defgeneric get-query-params (object))
+
+(defmethod get-query-params ((this <search>))
+  (awhen (slot-value this 'search-type)
+    (cons (cons "search_type" it)
+          (awhen (slot-value this 'query-cache)
+            (list (cons "query_cache" it))))))
 
 (defun new-search (query &key aggregations timeout
                            from size search-type 
@@ -152,11 +163,15 @@
                                   (:query-then-fetch
                                    "query_then_fetch")
                                   (:query-and-fetch
-                                   "query_then_fetch")))
+                                   "query_then_fetch")
+                                  (:count
+                                   "count")
+                                  (:scan
+                                   "scan")))
                  :query-cache (when query-cache
                                 (ecase query-cache
-                                  (:enable 'yason:true)
-                                  (:disable 'yason:false)))
+                                  (:enable "true")
+                                  (:disable "false")))
                  :terminate-after terminate-after
                  :aggregations aggregations))
 
@@ -175,10 +190,12 @@
 
 (defmethod get* ((place <server>) (query <search>))
   (let* ((result
-          (send-request (format nil "~A/_search" (get-uri place))
+          (send-request (format nil "~A/_search"
+                                (get-uri place))
                         :get
-                        (with-output-to-string* ()
-                          (encode-object query))))
+                        :data (with-output-to-string* ()
+                                (encode-object query))
+                        :parameters (get-query-params query)))
          (hits (gethash "hits" result))
          (shards (gethash "_shards" result)))
     (values (mapcar #'hash-to-document
@@ -187,8 +204,8 @@
             (gethash "aggregations" result)
             (list :hits (gethash "total" hits)
                   :shards (list :total (gethash "total" shards)
-                                :failed (gethash "successful" shards)
-                                :successful (gethash "failed" shards))
+                                :failed (gethash "failed" shards)
+                                :successful (gethash "successful" shards))
                   :timed-out (gethash "timed_out" result)
                   :took (gethash "took" result)))))
 

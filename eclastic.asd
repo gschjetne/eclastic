@@ -26,7 +26,8 @@
   :license "LGPLv3+"
   :depends-on (:drakma
                :yason
-               :flexi-streams)
+               :flexi-streams
+               :anaphora)
   :components
   ((:module "src"
             :serial t
