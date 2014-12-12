@@ -34,7 +34,8 @@
   (:export #:match
            #:bool
            #:filtered
-           #:terms))
+           #:terms
+           #:match-all))
 
 (in-package #:eclastic.query)
 
@@ -89,7 +90,7 @@
 
 (defclass <minimum-should-match-query> (<query>)
   ((minimum-should-match :initarg :minimum-should-match
-                   :reader minimum-should-match)))
+                         :reader minimum-should-match)))
 
 (defclass <match> (<string-query>
                    <fuzzy-query>
@@ -222,3 +223,15 @@
                  :search-field field
                  :query-list query-list
                  :minimum-should-match minimum-should-match))
+
+(defclass <match-all> (<boost-query>)
+  ())
+
+(defmethod encode-slots progn ((this <match-all>))
+  (with-object-element ("match_all")
+    (with-object ()
+      (encode-object-element* "boost" (boost this)))))
+
+(defun match-all (&key boost)
+  (make-instance '<match-all>
+                 :boost boost))
