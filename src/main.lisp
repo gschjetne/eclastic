@@ -16,37 +16,37 @@
 ;; License along with Eclastic.  If not, see
 ;; <http://www.gnu.org/licenses/>.
 
-(in-package #:cl-user)
-(defpackage #:eclastic
-  (:use #:cl
-        #:eclastic.query
-        #:eclastic.aggregations
-        #:eclastic.util)
-  (:import-from #:yason
-                #:parse
-                #:encode
-                #:encode-slots
-                #:encode-object
-                #:encode-object-element
-                #:with-object
-                #:with-object-element
-                #:with-output-to-string*
-                #:*json-output*)
-  (:import-from #:drakma
-                #:http-request)
-  (:import-from #:flexi-streams
-                #:octets-to-string)
-  (:export #:get*
-           #:new-search
-           #:document-by-id
-           #:document-not-found
-           #:<document>
-           #:<server>
-           #:<index>
-           #:<type>
-           #:<search>))
+(in-package :cl-user)
+(defpackage :eclastic
+  (:use :cl
+        :eclastic.query
+        :eclastic.aggregations
+        :eclastic.util)
+  (:import-from :yason
+                :parse
+                :encode
+                :encode-slots
+                :encode-object
+                :encode-object-element
+                :with-object
+                :with-object-element
+                :with-output-to-string*
+                :*json-output*)
+  (:import-from :drakma
+                :http-request)
+  (:import-from :flexi-streams
+                :octets-to-string)
+  (:export :get*
+           :new-search
+           :document-by-id
+           :document-not-found
+           :<document>
+           :<server>
+           :<index>
+           :<type>
+           :<search>))
 
-(in-package #:eclastic)
+(in-package :eclastic)
 
 (defclass <server> ()
   ((host :initarg :host
@@ -206,7 +206,3 @@
 
 (defun document-by-id (place id)
   (get* place (make-instance '<document> :id id)))
-
-(defun inspect-json (object &optional (stream *standard-output*))
-  (yason:with-output (stream :indent t)
-    (encode-object object)))

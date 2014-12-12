@@ -16,26 +16,26 @@
 ;; License along with Eclastic.  If not, see
 ;; <http://www.gnu.org/licenses/>.
 
-(in-package #:cl-user)
-(defpackage #:eclastic.aggregations
-  (:use #:cl
-        #:eclastic.util)
-  (:import-from #:yason
-                #:encode
-                #:encode-slots
-                #:encode-object
-                #:encode-object-element
-                #:with-array
-                #:encode-array-elements
-                #:with-object
-                #:with-object-element
-                #:with-output-to-string*
-                #:*json-output*)
-  (:export #:min*
-           #:max*
-           #:percentiles))
+(in-package :cl-user)
+(defpackage :eclastic.aggregations
+  (:use :cl
+        :eclastic.util)
+  (:import-from :yason
+                :encode
+                :encode-slots
+                :encode-object
+                :encode-object-element
+                :with-array
+                :encode-array-elements
+                :with-object
+                :with-object-element
+                :with-output-to-string*
+                :*json-output*)
+  (:export :min*
+           :max*
+           :percentiles))
 
-(in-package #:eclastic.aggregations)
+(in-package :eclastic.aggregations)
 
 (defclass <aggregation> ()
   ())

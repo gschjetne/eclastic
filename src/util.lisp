@@ -16,21 +16,28 @@
 ;; License along with Eclastic.  If not, see
 ;; <http://www.gnu.org/licenses/>.
 
-(in-package #:cl-user)
-(defpackage #:eclastic.util
-  (:use #:cl)
-  (:import-from #:yason
-                #:encode-object-element
-                #:with-object-element)
-  (:export #:encode-object-element*
-           #:with-object-element*))
+(in-package :cl-user)
+(defpackage :eclastic.util
+  (:use :cl)
+  (:import-from :yason
+                :encode-object
+                :encode-object-element
+                :with-object-element)
+  (:export :encode-object-element*
+           :with-object-element*))
 
-(in-package #:eclastic.util)
+(in-package :eclastic.util)
 
 (defmacro encode-object-element* (key value)
+  "Encode key-value pair only if VALUE is non-NIL"
   `(when ,value
      (encode-object-element ,key ,value)))
 
 (defmacro with-object-element* ((key predicate) &body body)
+  "Encode key-body only if PREDICATE is non-NIL"
   `(when ,predicate
      (with-object-element (,key) ,@body)))
+
+(defun inspect-json (object &optional (stream *standard-output*))
+  (yason:with-output (stream :indent t)
+    (encode-object object)))

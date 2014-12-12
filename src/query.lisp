@@ -16,28 +16,28 @@
 ;; License along with Eclastic.  If not, see
 ;; <http://www.gnu.org/licenses/>.
 
-(in-package #:cl-user)
-(defpackage #:eclastic.query
-  (:use #:cl
-        #:eclastic.util)
-  (:import-from #:yason
-                #:encode
-                #:encode-slots
-                #:encode-object
-                #:encode-object-element
-                #:with-array
-                #:encode-array-elements
-                #:with-object
-                #:with-object-element
-                #:with-output-to-string*
-                #:*json-output*)
-  (:export #:match
-           #:bool
-           #:filtered
-           #:terms
-           #:match-all))
+(in-package :cl-user)
+(defpackage :eclastic.query
+  (:use :cl
+        :eclastic.util)
+  (:import-from :yason
+                :encode
+                :encode-slots
+                :encode-object
+                :encode-object-element
+                :with-array
+                :encode-array-elements
+                :with-object
+                :with-object-element
+                :with-output-to-string*
+                :*json-output*)
+  (:export :match
+           :bool
+           :filtered
+           :terms
+           :match-all)))
 
-(in-package #:eclastic.query)
+(in-package :eclastic.query)
 
 (defclass <query> ()
   ())
