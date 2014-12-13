@@ -19,8 +19,6 @@
 (in-package :cl-user)
 (defpackage :eclastic
   (:use :cl
-        :eclastic.query
-        :eclastic.aggregations
         :eclastic.util)
   (:import-from :yason
                 :parse
@@ -176,7 +174,7 @@
                  :aggregations aggregations))
 
 (defmethod encode-slots progn ((this <search>))
-  (with-object-element ("query")
+  (with-object-element* ("query" (query this))
     (encode-object (query this)))
   (encode-object-element* "timeout" (timeout this))
   (encode-object-element* "from" (from this))
