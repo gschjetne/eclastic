@@ -31,12 +31,17 @@
                 :with-object-element
                 :with-output-to-string*
                 :*json-output*)
-  (:export :<min-or-max>
+  (:export :<simple-aggregation>
            :<percentiles>
            :<cardinality>
            :<terms>
            :min*
            :max*
+           :sum
+           :avg
+           :stats
+           :extended-stats
+           :value-count
            :percentiles
            :cardinality
            :terms))
@@ -66,27 +71,58 @@
               (aggregate-script this))
     (error "Either field or script is required")))
 
-(defclass <min-or-max> (<metric-aggregation> <field-or-script-aggregation>)
-  ((min-or-max :initarg :min-or-max
-               :accessor min-or-max)))
+(defclass <simple-aggregation> (<metric-aggregation> <field-or-script-aggregation>)
+  ((aggregation-type :initarg :aggregation-type
+               :accessor aggregation-type)))
 
-(defmethod encode-slots progn ((this <min-or-max>))
-  (with-object-element ((min-or-max this))
+(defmethod encode-slots progn ((this <simple-aggregation>))
+  (with-object-element ((aggregation-type this))
     (with-object ()
       (encode-object-element* "field" (aggregate-field this))
       (encode-object-element* "script" (aggregate-script this)))))
 
 (defun min* (&key field script)
-  (make-instance '<min-or-max>
-                 :min-or-max "min"
+  (make-instance '<simple-aggregation>
+                 :aggregation-type "min"
                  :aggregate-field field
                  :aggregate-script script))
 
 (defun max* (&key field script)
-  (make-instance '<min-or-max>
-                 :min-or-max "max"
+  (make-instance '<simple-aggregation>
+                 :aggregation-type "max"
                  :aggregate-field field
                  :aggregate-script script))
+
+(defun sum (&key field script)
+  (make-instance '<simple-aggregation>
+                 :aggregation-type "sum"
+                 :aggregate-field field
+                 :aggregate-script script))
+
+(defun avg (&key field script)
+  (make-instance '<simple-aggregation>
+                 :aggregation-type "avg"
+                 :aggregate-field field
+                 :aggregate-script script))
+
+(defun stats (&key field script)
+  (make-instance '<simple-aggregation>
+                 :aggregation-type "stats"
+                 :aggregate-field field
+                 :aggregate-script script))
+
+(defun extended-stats (&key field script)
+  (make-instance '<simple-aggregation>
+                 :aggregation-type "extended_stats"
+                 :aggregate-field field
+                 :aggregate-script script))
+
+(defun value-count (&key field script)
+  (make-instance '<simple-aggregation>
+                 :aggregation-type "value_count"
+                 :aggregate-field field
+                 :aggregate-script script))
+
 
 (defclass <percentiles> (<metric-aggregation> <field-or-script-aggregation>)
   ((percents :initarg :percents
