@@ -31,11 +31,18 @@
                 :with-object-element
                 :with-output-to-string*
                 :*json-output*)
-  (:export :match
+  (:export :<match>
+           :<bool>
+           :<filtered>
+           :<terms>
+           :<match-all>
+           :<ids>
+           :match
            :bool
            :filtered
            :terms
-           :match-all)))
+           :match-all
+           :ids))
 
 (in-package :eclastic.query)
 
@@ -235,3 +242,20 @@
 (defun match-all (&key boost)
   (make-instance '<match-all>
                  :boost boost))
+
+(defclass <ids> (<query> <filter>)
+  ((document-type :initarg :type
+                  :reader document-type)
+   (values :initarg :values
+           :reader id-values)))
+
+(defmethod encode-slots progn ((this <ids>))
+  (with-object-element ("ids")
+    (with-object ()
+      (encode-object-element "values" (id-values this))
+      (encode-object-element* "type" (document-type this)))))
+
+(defun ids (type &rest values)
+  (make-instance '<ids>
+                 :type type
+                 :values values))

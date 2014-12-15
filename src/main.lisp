@@ -41,6 +41,8 @@
            :new-search
            :document-by-id
            :document-not-found
+           :document-id
+           :document-source
            :<document>
            :<server>
            :<index>
@@ -97,9 +99,9 @@
 
 (defclass <document> (<type>)
   ((id :initarg :id
-       :reader id)
+       :reader document-id)
    (source :initarg :source
-           :accessor source)
+           :accessor document-source)
    (version :initarg :version
             :accessor version)))
 
@@ -134,7 +136,9 @@
    (terminate-after :initarg :terminate-after
                     :reader terminate-after)
    (aggregations :initarg :aggregations
-                 :reader aggregations)))
+                 :reader aggregations)
+   (suggestions :initarg :suggestions
+                :reader suggestions)))
 
 (defgeneric get-query-params (object))
 
@@ -146,7 +150,8 @@
 
 (defun new-search (query &key aggregations timeout
                            from size search-type 
-                           query-cache terminate-after)
+                           query-cache terminate-after
+                           suggestions)
   (make-instance '<search>
                  :query query
                  :timeout timeout
@@ -171,7 +176,8 @@
                                   (:enable "true")
                                   (:disable "false")))
                  :terminate-after terminate-after
-                 :aggregations aggregations))
+                 :aggregations aggregations
+                 :suggestions suggestions))
 
 (defmethod encode-slots progn ((this <search>))
   (with-object-element* ("query" (query this))
@@ -183,6 +189,11 @@
   (with-object-element* ("aggregations" (aggregations this))
     (with-object ()
       (loop for pair in (aggregations this) do
+           (with-object-element ((car pair))
+             (encode-object (cdr pair))))))
+  (with-object-element* ("suggest" (suggestions this))
+    (with-object ()
+      (loop for pair in (suggestions this) do
            (with-object-element ((car pair))
              (encode-object (cdr pair)))))))
 
