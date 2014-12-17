@@ -37,12 +37,14 @@
            :<terms>
            :<match-all>
            :<ids>
+           :<range>
            :match
            :bool
            :filtered
            :terms
            :match-all
-           :ids))
+           :ids
+           :range))
 
 (in-package :eclastic.query)
 
@@ -259,3 +261,32 @@
   (make-instance '<ids>
                  :type type
                  :values values))
+
+(defclass <range> (<field-query> <boost-query> <filter>)
+  ((gte :initarg :gte)
+   (gt :initarg :gt)
+   (lte :initarg :lte)
+   (lt :initarg :lt)))
+
+(defmethod encode-slots progn ((this <range>))
+  (with-object-element ("range")
+    (with-object ()
+      (with-object-element ((search-field this))
+        (with-object ()
+          (encode-object-element* "gte" (slot-value this 'gte))
+          (encode-object-element* "gt" (slot-value this 'gt))
+          (encode-object-element* "lte" (slot-value this 'lte))
+          (encode-object-element* "lt" (slot-value this 'lt))
+          (unless (in-filter-position-p this)
+            (encode-object-element* "boost" (boost this))))))))
+
+(defun range (field &key gte gt lte lt boost)
+  (ensure-mutually-exclusive gte gt)
+  (ensure-mutually-exclusive lte lt)
+  (make-instance '<range>
+                 :search-field field
+                 :boost boost
+                 :gte gte
+                 :gt gt
+                 :lte lte
+                 :lt lt))
