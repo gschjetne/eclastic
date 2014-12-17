@@ -63,13 +63,11 @@
    (aggregate-script :initarg :aggregate-script
                      :reader aggregate-script)))
 
+;; Checks whether both field and script, which are mutually exclusive
+;; has been provided. This does not provide a good error message, so
+;; it needs to be moved to each helper function.
 (defmethod encode-slots progn ((this <field-or-script-aggregation>))
-  (when (and (aggregate-field this)
-             (aggregate-script this))
-    (error "Field and script are mutually exclusive"))
-  (unless (or (aggregate-field this)
-              (aggregate-script this))
-    (error "Either field or script is required")))
+  (ensure-mutually-exclusive (aggregate-field this) (aggregate-script this)))
 
 (defclass <simple-aggregation> (<metric-aggregation> <field-or-script-aggregation>)
   ((aggregation-type :initarg :aggregation-type

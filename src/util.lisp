@@ -24,7 +24,9 @@
                 :encode-object-element
                 :with-object-element)
   (:export :encode-object-element*
-           :with-object-element*))
+           :with-object-element*
+           :ensure-mutually-exclusive
+           :inspect-json))
 
 (in-package :eclastic.util)
 
@@ -41,3 +43,12 @@
 (defun inspect-json (object &optional (stream *standard-output*))
   (yason:with-output (stream :indent t)
     (encode-object object)))
+
+(defmacro ensure-mutually-exclusive (a b)
+  `(progn
+     (when (and ,a ,b)
+       (error (format nil "~A and ~A are mutually exclusive"
+                      (quote ,a) (quote ,b))))
+     (unless (or ,a ,b)
+       (error (format nil "Either ~A or ~A must be non-NIL"
+                      (quote ,a) (quote ,b))))))
