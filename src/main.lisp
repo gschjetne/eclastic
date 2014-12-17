@@ -31,7 +31,8 @@
                 :with-output-to-string*
                 :*json-output*)
   (:import-from :drakma
-                :http-request)
+                :http-request
+                :*text-content-types*)
   (:import-from :flexi-streams
                 :octets-to-string)
   (:import-from :anaphora
@@ -67,15 +68,22 @@
           (port this)))
 
 (defun send-request (uri method &key data parameters)
-  (parse
-   (octets-to-string
-    (http-request uri
-                  :method method
-                  :content data
-                  :content-type "application/json"
-                  :external-format-out :utf-8
-                  :parameters parameters)
-    :external-format :utf-8)))
+  (let ((*text-content-types*
+          '(("application" . "json"))))
+    (multiple-value-bind (body status headers uri stream closep reason)
+        (http-request uri
+                      :method method
+                      :content data
+                      :content-type "application/json"
+                      :external-format-in :utf-8
+                      :external-format-out :utf-8
+                      :parameters parameters
+                      :want-stream T)
+      (declare (ignore status headers uri stream reason))
+      (unwind-protect
+           (parse body)
+        (when closep
+          (close body))))))
 
 (defclass <index> (<server>)
   ((index-name :initarg :index
@@ -110,7 +118,7 @@
      (format stream "/~A/~A/~A"
              (index-name obj)
              (type-name obj)
-             (id obj))))
+             (document-id obj))))
 
 (defun hash-to-document (hash-table &key host port)
   (make-instance '<document>
@@ -149,7 +157,7 @@
             (list (cons "query_cache" it))))))
 
 (defun new-search (query &key aggregations timeout
-                           from size search-type 
+                           from size search-type
                            query-cache terminate-after
                            suggestions)
   (make-instance '<search>
@@ -207,9 +215,7 @@
                         :parameters (get-query-params query)))
          (hits (gethash "hits" result))
          (shards (gethash "_shards" result)))
-    (values (mapcar #'hash-to-document
-                                       (gethash "hits"
-                                                hits))
+    (values (mapcar #'hash-to-document (gethash "hits" hits))
             (gethash "aggregations" result)
             (list :hits (gethash "total" hits)
                   :shards (list :total (gethash "total" shards)
@@ -221,7 +227,7 @@
 (defmethod get* ((place <type>) (document <document>))
   (let ((result
          (send-request
-          (format nil "~A/~A" (get-uri place) (id document))
+          (format nil "~A/~A" (get-uri place) (document-id document))
           :get)))
     (unless (gethash "found" result)
       (warn 'document-not-found))
