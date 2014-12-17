@@ -52,8 +52,8 @@
   ())
 
 (defclass <filter> ()
-  ((in-filter-position :initform nil
-                       :accessor in-filter-position)))
+  ((in-filter-position-p :initform nil
+                         :accessor in-filter-position-p)))
 
 (defgeneric encode-subquery (subquery))
 
