@@ -1,4 +1,5 @@
 ;; Copyright © 2014 FMAP SVERIGE AB
+;;           © 2014 Olof-Joachim Frahm <olof@macrolet.net>
 
 ;; This file is part of Eclastic
 
