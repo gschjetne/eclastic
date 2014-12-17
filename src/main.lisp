@@ -118,7 +118,7 @@
      (format stream "/~A/~A/~A"
              (index-name obj)
              (type-name obj)
-             (id obj))))
+             (document-id obj))))
 
 (defun hash-to-document (hash-table &key host port)
   (make-instance '<document>
@@ -227,7 +227,7 @@
 (defmethod get* ((place <type>) (document <document>))
   (let ((result
          (send-request
-          (format nil "~A/~A" (get-uri place) (id document))
+          (format nil "~A/~A" (get-uri place) (document-id document))
           :get)))
     (unless (gethash "found" result)
       (warn 'document-not-found))
