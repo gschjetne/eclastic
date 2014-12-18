@@ -120,7 +120,9 @@
           (encode-object-element* "zero_terms_query"
                                   (zero-terms-query this))
           (encode-object-element* "cutoff_frequency"
-                                  (cutoff-frequency this)))))))
+                                  (cutoff-frequency this))
+          (encode-object-element* "fuzziness"
+                                  (fuzziness this)))))))
 
 (defun match (query-string field &key
                                    operator
