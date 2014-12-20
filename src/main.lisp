@@ -29,6 +29,7 @@
                 :encode-object-element
                 :with-object
                 :with-object-element
+                :with-output
                 :with-output-to-string*
                 :*json-output*)
   (:import-from :drakma
@@ -39,6 +40,8 @@
   (:import-from :anaphora
                 :awhen
                 :it)
+  (:import-from :alexandria
+                :with-gensyms)
   (:export :get*
            :new-search
            :document-by-id
@@ -106,13 +109,23 @@
 
 (defgeneric get* (place contents))
 
+(defgeneric post* (place contents))
+
 (defclass <document> (<type>)
   ((id :initarg :id
        :reader document-id)
    (source :initarg :source
+           :initform nil
            :accessor document-source)
    (version :initarg :version
-            :accessor version)))
+            :initform nil
+            :accessor version)
+   (routing :initarg :routing
+            :initform nil
+            :reader routing)
+   (parent :initarg :parent
+           :initform nil
+           :reader parent-of)))
 
 (defmethod print-object ((obj <document>) stream)
    (print-unreadable-object (obj stream :type t :identity t)
@@ -128,6 +141,8 @@
                  :id (gethash "_id" hash-table)
                  :version (gethash "_version" hash-table)
                  :source (gethash "_source" hash-table)
+                 :routing (gethash "_routing" hash-table)
+                 :parent (gethash "_parent" hash-table)
                  :host host
                  :port port))
 
@@ -239,3 +254,61 @@
 
 (defun document-by-id (place id)
   (get* place (make-instance '<document> :id id)))
+
+(defclass <bulk> ()
+  ((bulk-stream :initform (make-string-output-stream)
+                :reader get-bulk-stream)))
+
+(defmethod close ((this <bulk>) &key abort)
+  (close (get-bulk-stream this) :abort abort))
+
+(defgeneric get-bulk-string (bulk))
+
+(defmethod get-bulk-string ((this <bulk>))
+  (when (open-stream-p (get-bulk-stream this))
+    (close this)
+    (get-output-stream-string (get-bulk-stream this))))
+
+(defgeneric put-document (bulk document &optional action))
+
+(defmethod put-document ((bulk <bulk>) (document <document>) &optional (action :index))
+  (with-output ((get-bulk-stream bulk))
+    (with-object ()
+      (with-object-element ((ecase action
+                              (:index "index")
+                              (:create "create")
+                              (:delete "delete")
+                              (:update "update")))
+        (with-object ()
+          (encode-object-element* "_index" (index-name document))
+          (encode-object-element* "_type"  (type-name document))
+          (encode-object-element* "_id" (document-id document))
+          (encode-object-element* "_version" (version document))
+          (encode-object-element* "_routing" (routing document))
+          (encode-object-element* "_parent" (parent-of document))))))
+  (fresh-line (get-bulk-stream bulk))
+  (unless (eq action :delete)
+    (encode (document-source document) (get-bulk-stream bulk))
+    (fresh-line (get-bulk-stream bulk))))
+
+(defmethod post ((place <server>) (bulk <bulk>))
+  (let ((result
+         (send-request (format nil "~A/_bulk" (get-uri place))
+          :post :data (get-bulk-string bulk))))
+    (values (mapcar (lambda (item)
+                      (car (loop for action being each hash-key of item collect
+                                (cons (hash-to-document (gethash action item))
+                                      (intern (string-upcase action) :keyword)))))
+                    (gethash "items" result))
+            (list :errors (gethash "errors" result)
+                  :took (gethash "took" result)))))
+
+(defmacro with-bulk-documents ((var place) &body documents)
+  (with-gensyms (result)
+    `(let ((,var (make-instance '<bulk>))
+           (,result))
+       (unwind-protect (progn ,@documents
+                              (setf ,result (multiple-value-list (post ,place ,var))))
+         (close ,var))
+       (apply #'values ,result))))
+
