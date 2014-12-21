@@ -91,10 +91,12 @@
 
 (defclass <index> (<server>)
   ((index-name :initarg :index
+               :initform nil
                :reader index-name)))
 
 (defclass <type> (<index>)
   ((type-name :initarg :type
+              :initform nil
               :reader type-name)))
 
 (defmethod get-uri ((this <index>))
