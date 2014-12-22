@@ -43,6 +43,7 @@
   (:import-from :alexandria
                 :with-gensyms)
   (:export :get*
+           :delete*
            :new-search
            :document-by-id
            :document-not-found
@@ -115,6 +116,8 @@
 (defgeneric get* (place contents))
 
 (defgeneric post* (place contents))
+
+(defgeneric delete* (place contents))
 
 (defclass <document> (<type>)
   ((id :initarg :id
@@ -242,6 +245,20 @@
                   :shards (hash-table-keyword-plist shards)
                   :timed-out (gethash "timed_out" result)
                   :took (gethash "took" result)))))
+
+(defmethod delete* ((place <type>) (query <search>))
+  (let ((result (send-request (format nil "~A/_query"
+                                      (get-uri place))
+                              :delete
+                              :data (with-output-to-string* ()
+                                      (encode-object query)))))
+    (apply #'values
+           (loop for index being each hash-key in
+                (gethash "_indices" result) using
+                (hash-value value) collect
+                (list :index index
+                      :shards
+                      (hash-table-keyword-plist (gethash "_shards" value)))))))
 
 (defmethod get* ((place <type>) (document <document>))
   (let ((result
