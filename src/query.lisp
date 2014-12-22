@@ -38,13 +38,17 @@
            :<match-all>
            :<ids>
            :<range>
+           :<has-child>
+           :<has-parent>
            :match
            :bool
            :filtered
            :terms
            :match-all
            :ids
-           :range))
+           :range
+           :has-child
+           :has-parent))
 
 (in-package :eclastic.query)
 
@@ -100,6 +104,10 @@
 (defclass <minimum-should-match-query> (<query>)
   ((minimum-should-match :initarg :minimum-should-match
                          :reader minimum-should-match)))
+
+(defclass <score-mode-query> (<query>)
+  ((score-mode :initarg :score-mode
+               :reader score-mode)))
 
 (defclass <match> (<string-query>
                    <fuzzy-query>
@@ -292,3 +300,58 @@
                  :gt gt
                  :lte lte
                  :lt lt))
+
+(defclass <parent-child> (<filter> <score-mode-query>)
+  ((query :initarg :query
+          :reader subquery)
+   (type :initarg :type
+         :reader document-type)))
+
+(defclass <has-child> (<parent-child>)
+  ((min-children :initarg :min-children
+                 :reader min-children)
+   (max-children :initarg :max-children
+                 :reader max-children)))
+
+(defmethod encode-slots progn ((this <has-child>))
+  (with-object-element ("has_child")
+    (with-object ()
+      (with-object-element ("query")
+        (encode-object (subquery this)))
+      (encode-object-element "type" (document-type this))
+      (encode-object-element* "score_mode" (score-mode this))
+      (encode-object-element* "min_children" (min-children this))
+      (encode-object-element* "max_children" (max-children this)))))
+
+(defun has-child (child-type query &key min-children max-children score-mode)
+  (make-instance '<has-child>
+                 :type child-type
+                 :query query
+                 :min-children min-children
+                 :max-children max-children
+                 :score-mode (when score-mode
+                               (ecase score-mode
+                                 (:max "max")
+                                 (:sum "sum")
+                                 (:avg "avg")
+                                 (:none "none")))))
+
+(defclass <has-parent> (<parent-child>)
+  ())
+
+(defmethod encode-slots progn ((this <has-parent>))
+  (with-object-element ("has_parent")
+    (with-object ()
+      (with-object-element ("query")
+        (encode-object (subquery this)))
+      (encode-object-element "parent_type" (document-type this))
+      (encode-object-element* "score_mode" (score-mode this)))))
+
+(defun has-parent (parent-type query &key score-mode)
+  (make-instance '<has-parent>
+                 :type parent-type
+                 :query query
+                 :score-mode (when score-mode
+                               (ecase score-mode
+                                 (:score "score")
+                                 (:none "none")))))
