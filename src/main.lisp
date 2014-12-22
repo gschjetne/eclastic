@@ -48,6 +48,9 @@
            :document-not-found
            :document-id
            :document-source
+           :post
+           :with-bulk-documents
+           :put-document
            :<document>
            :<server>
            :<index>
