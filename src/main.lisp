@@ -87,9 +87,11 @@
                       :external-format-out :utf-8
                       :parameters parameters
                       :want-stream T)
-      (declare (ignore status headers uri stream reason))
+      (declare (ignore headers uri stream reason))
       (unwind-protect
-           (parse body)
+           (if (= status 400)
+               (error (gethash "error" (parse body)))
+               (parse body))
         (when closep
           (close body))))))
 
