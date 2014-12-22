@@ -239,9 +239,7 @@
     (values (mapcar #'hash-to-document (gethash "hits" hits))
             (gethash "aggregations" result)
             (list :hits (gethash "total" hits)
-                  :shards (list :total (gethash "total" shards)
-                                :failed (gethash "failed" shards)
-                                :successful (gethash "successful" shards))
+                  :shards (hash-table-keyword-plist shards)
                   :timed-out (gethash "timed_out" result)
                   :took (gethash "took" result)))))
 

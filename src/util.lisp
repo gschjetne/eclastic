@@ -26,7 +26,8 @@
   (:export :encode-object-element*
            :with-object-element*
            :ensure-mutually-exclusive
-           :inspect-json))
+           :inspect-json
+           :hash-table-keyword-plist))
 
 (in-package :eclastic.util)
 
@@ -52,3 +53,10 @@
      (unless (or ,a ,b)
        (error (format nil "Either ~A or ~A must be non-NIL"
                       (quote ,a) (quote ,b))))))
+
+(defun hash-table-keyword-plist (table)
+  (let ((plist nil))
+    (maphash (lambda (key value)
+               (setf (getf plist (intern (string-upcase key)
+                                         :keyword)) value)) table)
+    plist))
