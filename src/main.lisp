@@ -249,9 +249,11 @@
                  :terminate-after terminate-after
                  :aggregations aggregations
                  :suggestions suggestions
-                 :sort-by (typecase sort
+                 :sort-by (etypecase sort
                             (cons sort)
-                            (otherwise (list sort)))))
+                            (string (list sort))
+                            (<sort-by> (list sort))
+                            (null nil))))
 
 (defmethod encode-slots progn ((this <search>))
   (with-object-element* ("query" (query this))
