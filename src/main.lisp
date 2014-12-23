@@ -27,8 +27,10 @@
                 :encode-slots
                 :encode-object
                 :encode-object-element
+                :encode-array-element
                 :with-object
                 :with-object-element
+                :with-array
                 :with-output
                 :with-output-to-string*
                 :*json-output*)
@@ -45,6 +47,7 @@
   (:export :get*
            :delete*
            :new-search
+           :sort-by
            :document-by-id
            :document-not-found
            :document-id
@@ -172,7 +175,9 @@
    (aggregations :initarg :aggregations
                  :reader aggregations)
    (suggestions :initarg :suggestions
-                :reader suggestions)))
+                :reader suggestions)
+   (sort :initarg :sort-by
+         :reader sort-by-list)))
 
 (defgeneric get-query-params (object))
 
@@ -182,10 +187,42 @@
           (awhen (slot-value this 'query-cache)
             (list (cons "query_cache" it))))))
 
+(defclass <sort-by> ()
+  ((field :initarg :field
+          :reader field)
+   (order :initarg :order
+          :reader sort-order)
+   (mode :initarg :mode
+         :reader sort-mode)))
+
+(defmethod encode ((this <sort-by>) &optional (stream *standard-output*))
+  (with-output (stream)
+    (with-object ()
+        (with-object-element ((field this))
+          (with-object ()
+            (encode-object-element* "order" (sort-order this))
+            (encode-object-element* "mode" (sort-mode this)))))))
+
+(defun sort-by (field &key order mode)
+  (if (or order mode)
+      (make-instance '<sort-by>
+                     :field field
+                     :order (when order
+                              (ecase order
+                                (:ascending "asc")
+                                (:descending "desc")))
+                     :mode (when mode
+                             (ecase mode
+                               (:min "min")
+                               (:max "max")
+                               (:sum "sum")
+                               (:avg "avg"))))
+      field))
+
 (defun new-search (query &key aggregations timeout
                            from size search-type
                            query-cache terminate-after
-                           suggestions)
+                           suggestions sort)
   (make-instance '<search>
                  :query query
                  :timeout timeout
@@ -211,7 +248,10 @@
                                   (:disable "false")))
                  :terminate-after terminate-after
                  :aggregations aggregations
-                 :suggestions suggestions))
+                 :suggestions suggestions
+                 :sort-by (typecase sort
+                            (cons sort)
+                            (otherwise (list sort)))))
 
 (defmethod encode-slots progn ((this <search>))
   (with-object-element* ("query" (query this))
@@ -229,7 +269,11 @@
     (with-object ()
       (loop for pair in (suggestions this) do
            (with-object-element ((car pair))
-             (encode-object (cdr pair)))))))
+             (encode-object (cdr pair))))))
+  (with-object-element* ("sort" (sort-by-list this))
+    (with-array ()
+      (loop for sort-option in (sort-by-list this) do
+           (encode-array-element sort-option)))))
 
 (defmethod get* ((place <server>) (query <search>))
   (let* ((result
