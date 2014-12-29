@@ -48,14 +48,11 @@
 
 (in-package :eclastic.aggregations)
 
-(defclass <aggregation> ()
-  ())
+(defclass <aggregation> () ())
 
-(defclass <metric-aggregation> (<aggregation>)
-  ())
+(defclass <metric-aggregation> (<aggregation>) ())
 
-(defclass <bucket-aggregation> (<aggregation>)
-  ())
+(defclass <bucket-aggregation> (<aggregation>) ())
 
 (defclass <field-or-script-aggregation> (<aggregation>)
   ((aggregate-field :initarg :aggregate-field
@@ -121,7 +118,6 @@
                  :aggregate-field field
                  :aggregate-script script))
 
-
 (defclass <percentiles> (<metric-aggregation> <field-or-script-aggregation>)
   ((percents :initarg :percents
              :reader percents)))
@@ -165,8 +161,7 @@
                              (:yes 'yason.true)
                              (:no 'yason.false)))))
 
-(defclass <terms> (<bucket-aggregation> <field-or-script-aggregation>)
-  ())
+(defclass <terms> (<bucket-aggregation> <field-or-script-aggregation>) ())
 
 (defmethod encode-slots progn ((this <terms>))
   (with-object-element ("terms")

@@ -17,6 +17,7 @@
 ;; <http://www.gnu.org/licenses/>.
 
 (in-package :cl-user)
+
 (defpackage :eclastic.query
   (:use :cl
         :eclastic.util)
@@ -52,8 +53,7 @@
 
 (in-package :eclastic.query)
 
-(defclass <query> ()
-  ())
+(defclass <query> () ())
 
 (defclass <filter> ()
   ((in-filter-position-p :initform nil
@@ -243,8 +243,7 @@
                  :query-list query-list
                  :minimum-should-match minimum-should-match))
 
-(defclass <match-all> (<boost-query>)
-  ())
+(defclass <match-all> (<boost-query>) ())
 
 (defmethod encode-slots progn ((this <match-all>))
   (with-object-element ("match_all")
@@ -336,8 +335,7 @@
                                  (:avg "avg")
                                  (:none "none")))))
 
-(defclass <has-parent> (<parent-child>)
-  ())
+(defclass <has-parent> (<parent-child>) ())
 
 (defmethod encode-slots progn ((this <has-parent>))
   (with-object-element ("has_parent")
