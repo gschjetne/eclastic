@@ -95,7 +95,8 @@
          (if script
              (encode-object-element "scripted_upsert" t)
              (encode-object-element "doc_as_upsert" t))))
-      (encode-object-element* "detect_noop" detect-noop))))
+      (encode-object-element* "detect_noop" detect-noop))
+    (fresh-line (get-bulk-stream bulk))))
 
 (defmethod post ((place <server>) (bulk <bulk>))
   (let ((result

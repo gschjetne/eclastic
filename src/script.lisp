@@ -33,7 +33,7 @@
 (in-package :eclastic.script)
 
 (defclass <script> ()
-  ((body :initarg :script-body
+  ((body :initarg :body
          :reader script-body)
    (parameters :initarg :script-parameters
                :reader script-parameters)))
