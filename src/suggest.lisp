@@ -16,29 +16,31 @@
 ;; License along with Eclastic.  If not, see
 ;; <http://www.gnu.org/licenses/>.
 
-(defpackage :cl-eclastic-system (:use :cl :asdf))
-(in-package :cl-eclastic-system)
+(in-package :cl-user)
+(defpackage :eclastic.suggest
+  (:use :cl
+        :eclastic.util)
+  (:import-from :yason
+                :encode
+                :encode-slots
+                :encode-object
+                :encode-object-element
+                :with-array
+                :encode-array-elements
+                :with-object
+                :with-object-element
+                :with-output-to-string*
+                :*json-output*)
+  (:export :<term>)))
 
-(defsystem eclastic
-  :name "Eclastic"
-  :author "Grim Schjetne <grim@schjetne.se"
-  :description "Elasticsearch client library"
-  :license "LGPLv3+"
-  :depends-on (:drakma
-               :yason
-               :flexi-streams
-               :anaphora)
-  :components
-  ((:module "src"
-            :serial t
-            :components
-            ((:file "util")
-             (:file "generic")
-             (:file "server")
-             (:file "query")
-             (:file "script")
-             (:file "aggregations")
-             (:file "document")
-             (:file "search")
-             (:file "bulk")
-             (:file "main")))))
+(in-package :eclastic.suggest)
+
+(defclass <suggester> ()
+  ((text :initarg :text
+         :reader text)))
+
+(defmethod encode-slots progn ((this <suggester>))
+  (encode-object-element "text" (text this)))
+
+(defclass <term> (<suggester>)
+  ())

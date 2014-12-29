@@ -19,7 +19,8 @@
 (in-package :cl-user)
 (defpackage :eclastic.aggregations
   (:use :cl
-        :eclastic.util)
+        :eclastic.util
+        :eclastic.script)
   (:import-from :yason
                 :encode
                 :encode-slots

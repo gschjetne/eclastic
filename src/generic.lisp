@@ -18,45 +18,35 @@
 
 (in-package :cl-user)
 
-(defpackage :eclastic
-  (:documentation
-   "Import and re-export the symbols that make up the public interface
-   of Eclastic.")
-  (:use :eclastic.generic
-        :eclastic.server
-        :eclastic.document
-        :eclastic.search
-        :eclastic.script
-        :eclastic.bulk)
+(defpackage :eclastic.generic
+  (:use :cl)
   (:export :get*
            :index
            :create
+           :read*
            :update
            :delete*
+           :post
+           :get-uri
+           :get-query-params))
 
-           :<server>
-           :host
-           :port
-           :index-name
-           :<type>
-           :type-name
+(in-package :eclastic.generic)
 
-           :<document>
-           :document-id
-           :document-source
-           :version
-           :routing
-           :parent-of
-           :document-not-found
-           :document-with-id
-           :document-by-id
+(defgeneric get* (place contents)
+  (:documentation "Retrieve documents from the database"))
 
-           :<search>
-           :new-search
-           :sort-by
+(defgeneric index (place contents)
+  (:documentation "Index documents in the database"))
 
-           :<script>
-           :define-script
-           :encode-script
+(defgeneric create (place contents))
 
-           :with-bulk-documents))
+(defgeneric update (place contents &key script upsert detect-noop))
+
+(defgeneric delete* (place contents)
+  (:documentation "Delete documents from the database"))
+
+(defgeneric post (place contents))
+
+(defgeneric get-uri (object))
+
+(defgeneric get-query-params (object))

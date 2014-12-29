@@ -1,4 +1,5 @@
 ;; Copyright © 2014 FMAP SVERIGE AB
+;;           © 2014 Olof-Joachim Frahm <olof@macrolet.net>
 
 ;; This file is part of Eclastic
 
@@ -17,17 +18,23 @@
 ;; <http://www.gnu.org/licenses/>.
 
 (in-package :cl-user)
+
 (defpackage :eclastic.util
   (:use :cl)
   (:import-from :yason
+                :parse
                 :encode-object
                 :encode-object-element
                 :with-object-element)
+  (:import-from :drakma
+                :http-request
+                :*text-content-types*)
   (:export :encode-object-element*
            :with-object-element*
            :ensure-mutually-exclusive
            :inspect-json
-           :hash-table-keyword-plist))
+           :hash-table-keyword-plist
+           :send-request))
 
 (in-package :eclastic.util)
 
@@ -60,3 +67,23 @@
                (setf (getf plist (intern (string-upcase key)
                                          :keyword)) value)) table)
     plist))
+
+(defun send-request (uri method &key data parameters)
+  (let ((*text-content-types*
+          '(("application" . "json"))))
+    (multiple-value-bind (body status headers uri stream closep reason)
+        (http-request uri
+                      :method method
+                      :content data
+                      :content-type "application/json"
+                      :external-format-in :utf-8
+                      :external-format-out :utf-8
+                      :parameters parameters
+                      :want-stream T)
+      (declare (ignore headers uri stream reason))
+      (unwind-protect
+           (if (= status 400)
+               (error (gethash "error" (parse body)))
+               (parse body))
+        (when closep
+          (close body))))))
