@@ -17,39 +17,6 @@
                                               :port 9200))
 #+END_SRC
 
-*** Indexing some documents
-
-Add some documents using the bulk API:
-
-#+BEGIN_SRC lisp
-  (with-bulk-documents (b *my-documents*)
-    (put-document b
-                  (make-instance '<document>
-                                 :id "1"
-                                 :source (alexandria:alist-hash-table
-                                          '(("speedLimit" . 110)))))
-    (put-document b
-                  (make-instance '<document>
-                                 :id "2"
-                                 :source (alexandria:alist-hash-table
-                                          '(("tollRoad" . nil))))))
-
-  ;; => ((#<<DOCUMENT> /highway/whatever/1 {1005627113}> . :INDEX))
-  ;;    (:ERRORS NIL :TOOK 394)
-#+END_SRC
-
-You can even mixin the document class with your application-specific
-classes and either use the source slot, or define your own
-document-source method:
-
-#+BEGIN_SRC lisp
-  (defclass <my-class> (<document>) ())
-
-  (defmethod document-source ((this <my-class>))
-    ;; Output hash table representation here
-    )
-#+END_SRC
-
 *** Fetching a document
     Asks the server for a document. If none exists, it still returns
     an empty document, but a warning is signalled:
