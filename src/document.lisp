@@ -84,6 +84,15 @@
       (warn 'document-not-found))
     (hash-to-document result)))
 
+(defmethod index ((place <type>) (document <document>))
+  (let ((result
+         (send-request
+          (format nil "~A/~A" (get-uri place) (document-id document))
+          :put
+          :data (with-output-to-string (s)
+                  (yason:encode (document-source document) s)))))
+    (hash-to-document result)))
+
 ;; Utility functions
 
 (defun document-with-id (id)
