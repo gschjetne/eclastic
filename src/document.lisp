@@ -23,10 +23,14 @@
         :eclastic.generic
         :eclastic.server
         :eclastic.util)
+  (:import-from :anaphora
+                :aand
+                :it)
   (:export :<document>
            :document-id
            :document-source
            :version
+           :version-conflict
            :routing
            :parent-of
            :hash-to-document
@@ -48,6 +52,10 @@
    (routing :initarg :routing
             :initform nil
             :reader routing)
+   (shard-preference :initarg :shard-preference
+                     :initform nil)
+   (refresh-when-get :initarg :refresh
+                     :initform nil)
    (parent :initarg :parent
            :initform nil
            :reader parent-of)))
@@ -73,16 +81,34 @@
 
 (define-condition document-not-found (warning) ())
 
+(define-condition version-conflict (error) ())
+
 ;; CRUD methods
 
 (defmethod get* ((place <type>) (document <document>))
-  (let ((result
-         (send-request
-          (format nil "~A/~A" (get-uri place) (document-id document))
-          :get)))
-    (unless (gethash "found" result)
-      (warn 'document-not-found))
-    (hash-to-document result)))
+  (with-slots (routing shard-preference refresh-when-get version) document
+    (let ((result
+           (send-request
+            (format nil "~A/~A" (get-uri place) (document-id document))
+            :get
+            :parameters (let ((parameters nil))
+                          (when routing
+                            (push (cons "routing" "true")
+                                  parameters))
+                          (when shard-preference
+                            (push (cons "preference" shard-preference)
+                                  parameters))
+                          (when refresh-when-get
+                            (push (cons "refresh" refresh-when-get)
+                                  parameters))
+                          (when version
+                            (push (cons "version" (format nil "~D" version))
+                                  parameters))))))
+      (when (aand (gethash "status" result) (= it 409))
+        (error 'version-conflict))
+      (unless (gethash "found" result)
+        (warn 'document-not-found))
+      (hash-to-document result))))
 
 (defmethod index ((place <type>) (document <document>))
   (let ((result
@@ -95,8 +121,22 @@
 
 ;; Utility functions
 
-(defun document-with-id (id)
-  (make-instance '<document> :id id))
+(defun document-with-id (id &key routing preference refresh version)
+  (make-instance '<document>
+                 :id id
+                 :routing routing
+                 :shard-preference (etypecase preference
+                               (keyword (ecase preference
+                                          (:primary "_primary")
+                                          (:local "_local")))
+                               (string preference)
+                               (null nil))
+                 :refresh refresh
+                 :version version))
 
-(defun document-by-id (place id)
-  (get* place (document-with-id id)))
+(defun document-by-id (place id &key routing preference refresh version)
+  (get* place (document-with-id id
+                                :routing routing
+                                :preference preference
+                                :refresh refresh
+                                :version version)))
