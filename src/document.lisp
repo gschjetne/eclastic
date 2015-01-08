@@ -26,6 +26,8 @@
   (:import-from :anaphora
                 :aand
                 :it)
+  (:import-from :alexandria
+                :with-gensyms)
   (:import-from :yason
                 :with-object
                 :with-output-to-string*
@@ -41,7 +43,8 @@
            :hash-to-document
            :document-not-found
            :document-with-id
-           :document-by-id))
+           :document-by-id
+           :define-source-accessors))
 
 (in-package :eclastic.document)
 
@@ -152,7 +155,7 @@
           :parameters (get-query-params document))))
     (hash-to-document result)))
 
-;; Utility functions
+;; Utilities
 
 (defun document-with-id (id &key routing preference refresh version)
   (make-instance '<document>
@@ -173,3 +176,25 @@
                                 :preference preference
                                 :refresh refresh
                                 :version version)))
+
+(defmacro define-source-accessors ((arg class) &body bindings)
+  `(progn ,@(loop for binding in bindings collect
+                 (destructuring-bind (method-name hash-key &optional default)
+                     binding
+                   (with-gensyms (setter)
+                     `(progn (defgeneric ,method-name (,arg))
+                             (defgeneric ,setter (,arg val))
+                             (defmethod ,method-name ((,arg ,class))
+                               (unless (document-source ,arg)
+                                 (error "The document does not have a document source"))
+                               (gethash ,hash-key (document-source ,arg)
+                                        ,default))
+                             (defmethod ,setter ((,arg ,class) val)
+                               (unless (document-source ,arg)
+                                 (cerror "Create source hash table"
+                                         "The document does not have a document source")
+                                 (setf (document-source ,arg)
+                                       (make-hash-table :test 'equal)))
+                               (setf (gethash ,hash-key
+                                              (document-source ,arg)) val))
+                             (defsetf ,method-name ,setter)))))))
