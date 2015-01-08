@@ -26,6 +26,11 @@
   (:import-from :anaphora
                 :aand
                 :it)
+  (:import-from :yason
+                :with-object
+                :with-output-to-string*
+                :encode-object-element
+                :encode-slots)
   (:export :<document>
            :document-id
            :document-source
@@ -83,32 +88,35 @@
 
 (define-condition version-conflict (error) ())
 
+(defmethod get-query-params ((this <document>))
+  (with-slots (routing shard-preference refresh-when-get version) this
+    (let ((parameters nil))
+      (when routing
+        (push (cons "routing" routing)
+              parameters))
+      (when shard-preference
+        (push (cons "preference" shard-preference)
+              parameters))
+      (when refresh-when-get
+        (push (cons "refresh" refresh-when-get)
+              parameters))
+      (when version
+        (push (cons "version" (format nil "~D" version))
+              parameters)))))
+
 ;; CRUD methods
 
 (defmethod get* ((place <type>) (document <document>))
-  (with-slots (routing shard-preference refresh-when-get version) document
-    (let ((result
-           (send-request
-            (format nil "~A/~A" (get-uri place) (document-id document))
-            :get
-            :parameters (let ((parameters nil))
-                          (when routing
-                            (push (cons "routing" "true")
-                                  parameters))
-                          (when shard-preference
-                            (push (cons "preference" shard-preference)
-                                  parameters))
-                          (when refresh-when-get
-                            (push (cons "refresh" refresh-when-get)
-                                  parameters))
-                          (when version
-                            (push (cons "version" (format nil "~D" version))
-                                  parameters))))))
-      (when (aand (gethash "status" result) (= it 409))
-        (error 'version-conflict))
-      (unless (gethash "found" result)
-        (warn 'document-not-found))
-      (hash-to-document result))))
+  (let ((result
+         (send-request
+          (format nil "~A/~A" (get-uri place) (document-id document))
+          :get
+          :parameters (get-query-params document))))
+    (when (aand (gethash "status" result) (= it 409))
+      (error 'version-conflict))
+    (unless (gethash "found" result)
+      (warn 'document-not-found))
+    (hash-to-document result)))
 
 (defmethod index ((place <type>) (document <document>))
   (let ((result
@@ -117,6 +125,31 @@
           :put
           :data (with-output-to-string (s)
                   (yason:encode (document-source document) s)))))
+    (hash-to-document result)))
+
+(defmethod update ((place <type>) (document <document>)
+                   &key script upsert detect-noop)
+  (let ((result
+         (send-request
+          (format nil "~A/~A/_update" (get-uri place) (document-id document))
+          :post
+          :data (with-output-to-string* ()
+                  (with-object ()
+                    (if script
+                        (encode-slots script)
+                        (encode-object-element "doc" (document-source document)))
+                    (etypecase upsert
+                      (null nil)
+                      (<document>
+                       (encode-object-element "upsert" (document-source upsert)))
+                      (hash-table
+                       (encode-object-element "upsert" upsert))
+                      (boolean
+                       (if script
+                           (encode-object-element "scripted_upsert" t)
+                           (encode-object-element "doc_as_upsert" t))))
+                    (encode-object-element* "detect_noop" detect-noop)))
+          :parameters (get-query-params document))))
     (hash-to-document result)))
 
 ;; Utility functions
