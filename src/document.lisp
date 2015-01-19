@@ -38,6 +38,7 @@
            :document-source
            :version
            :version-conflict
+           :document-exists
            :routing
            :parent-of
            :hash-to-document
@@ -91,6 +92,8 @@
 
 (define-condition version-conflict (error) ())
 
+(define-condition document-exists (error) ())
+
 (defmethod get-query-params ((this <document>))
   (with-slots (routing shard-preference refresh-when-get version) this
     (let ((parameters nil))
@@ -130,34 +133,55 @@
                   (yason:encode (document-source document) s)))))
     (hash-to-document result)))
 
+(defmethod create ((place <type>) (document <document>))
+  (multiple-value-bind (result status)
+      (send-request
+       (format nil "~A/~A/_create" (get-uri place) (document-id document))
+       :put
+       :data (with-output-to-string (s)
+               (yason:encode (document-source document) s)))
+    (if (= 409 status)
+        (error 'document-exists)
+        (hash-to-document result))))
+
 (defmethod update ((place <type>) (document <document>)
                    &key script upsert detect-noop)
+  (multiple-value-bind (result status)
+      (send-request
+       (format nil "~A/~A/_update" (get-uri place) (document-id document))
+       :post
+       :data (with-output-to-string* ()
+               (with-object ()
+                 (if script
+                     (encode-slots script)
+                     (encode-object-element "doc" (document-source document)))
+                 (etypecase upsert
+                   (null nil)
+                   (<document>
+                    (encode-object-element "upsert" (document-source upsert)))
+                   (hash-table
+                    (encode-object-element "upsert" upsert))
+                   (boolean
+                    (if script
+                        (encode-object-element "scripted_upsert" t)
+                        (encode-object-element "doc_as_upsert" t))))
+                 (encode-object-element* "detect_noop" detect-noop)))
+       :parameters (get-query-params document))
+    (when (= 404 status) (warn 'document-not-found))
+    (hash-to-document result)))
+
+(defmethod delete* ((place <type>) (document <document>))
   (let ((result
          (send-request
-          (format nil "~A/~A/_update" (get-uri place) (document-id document))
-          :post
-          :data (with-output-to-string* ()
-                  (with-object ()
-                    (if script
-                        (encode-slots script)
-                        (encode-object-element "doc" (document-source document)))
-                    (etypecase upsert
-                      (null nil)
-                      (<document>
-                       (encode-object-element "upsert" (document-source upsert)))
-                      (hash-table
-                       (encode-object-element "upsert" upsert))
-                      (boolean
-                       (if script
-                           (encode-object-element "scripted_upsert" t)
-                           (encode-object-element "doc_as_upsert" t))))
-                    (encode-object-element* "detect_noop" detect-noop)))
+          (format nil "~A/~A" (get-uri place) (document-id document))
+          :delete
           :parameters (get-query-params document))))
-    (hash-to-document result)))
+    (unless (gethash "found" result)
+      (warn 'document-not-found))))
 
 ;; Utilities
 
-(defun document-with-id (id &key routing preference refresh version)
+(defun document-with-id (id &key routing preference refresh version source)
   (make-instance '<document>
                  :id id
                  :routing routing
@@ -168,7 +192,8 @@
                                (string preference)
                                (null nil))
                  :refresh refresh
-                 :version version))
+                 :version version
+                 :source source))
 
 (defun document-by-id (place id &key routing preference refresh version)
   (get* place (document-with-id id
@@ -181,7 +206,7 @@
   `(progn ,@(loop for binding in bindings collect
                  (destructuring-bind (method-name hash-key &optional default)
                      binding
-                   (with-gensyms (setter)
+                   (let ((setter (intern (format nil "SET-~A" method-name))))
                      `(progn (defgeneric ,method-name (,arg))
                              (defgeneric ,setter (,arg val))
                              (defmethod ,method-name ((,arg ,class))
