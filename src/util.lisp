@@ -84,6 +84,6 @@
       (unwind-protect
            (if (= status 400)
                (error (gethash "error" (parse body)))
-               (parse body))
+               (values (parse body) status))
         (when closep
           (close body))))))
