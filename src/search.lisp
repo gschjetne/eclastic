@@ -61,7 +61,9 @@
    (suggestions :initarg :suggestions
                 :reader suggestions)
    (sort :initarg :sort-by
-         :reader sort-by-list)))
+         :reader sort-by-list)
+   (fields :initarg :fields
+           :reader return-fields)))
 
 (defmethod get-query-params ((this <search>))
   (awhen (slot-value this 'search-type)
@@ -121,12 +123,18 @@
   (with-object-element* ("sort" (sort-by-list this))
     (with-array ()
       (loop for sort-option in (sort-by-list this) do
-           (encode-array-element sort-option)))))
+           (encode-array-element sort-option))))
+  (let ((fields (return-fields this)))
+    (with-object-element* ("fields" fields)
+      (with-array ()
+        (unless (eq fields :none)
+          (loop for field in fields do
+               (encode-array-element field)))))))
 
 (defun new-search (query &key aggregations timeout
                            from size search-type
                            query-cache terminate-after
-                           suggestions sort)
+                           suggestions sort fields)
   (make-instance '<search>
                  :query query
                  :timeout timeout
@@ -157,7 +165,8 @@
                             (cons sort)
                             (string (list sort))
                             (<sort-by> (list sort))
-                            (null nil))))
+                            (null nil))
+                 :fields fields))
 
 ;; CRUD methods
 
