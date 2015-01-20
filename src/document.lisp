@@ -51,7 +51,7 @@
 
 (defclass <document> (<type>)
   ((id :initarg :id
-       :reader document-id)
+       :accessor document-id)
    (source :initarg :source
            :initform nil
            :accessor document-source)
