@@ -99,16 +99,19 @@
     (fresh-line (get-bulk-stream bulk))))
 
 (defmethod post ((place <server>) (bulk <bulk>))
-  (let ((result
-         (send-request (format nil "~A/_bulk" (get-uri place))
-          :post :data (get-bulk-string bulk))))
-    (values (mapcar (lambda (item)
-                      (car (loop for action being each hash-key of item collect
-                                (cons (hash-to-document (gethash action item))
-                                      (intern (string-upcase action) :keyword)))))
-                    (gethash "items" result))
-            (list :errors (gethash "errors" result)
-                  :took (gethash "took" result)))))
+  (let* ((data (get-bulk-string bulk))
+         (result
+          (unless (zerop (length data))
+            (send-request (format nil "~A/_bulk" (get-uri place))
+                          :post :data data))))
+    (when result
+      (values (mapcar (lambda (item)
+                        (car (loop for action being each hash-key of item collect
+                                  (cons (hash-to-document (gethash action item))
+                                        (intern (string-upcase action) :keyword)))))
+                      (gethash "items" result))
+              (list :errors (gethash "errors" result)
+                    :took (gethash "took" result))))))
 
 ;; Utilities
 
