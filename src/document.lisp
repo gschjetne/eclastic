@@ -120,7 +120,7 @@
           :parameters (get-query-params document))))
     (when (aand (gethash "status" result) (= it 409))
       (error 'version-conflict))
-    (unless (gethash "found" result)
+    (unless (json-true-p (gethash "found" result))
       (warn 'document-not-found))
     (hash-to-document result)))
 

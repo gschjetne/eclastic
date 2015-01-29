@@ -33,6 +33,8 @@
            :with-object-element*
            :ensure-mutually-exclusive
            :inspect-json
+           :json-true-p
+           :to-json-boolean
            :hash-table-keyword-plist
            :send-request))
 
@@ -51,6 +53,16 @@
 (defun inspect-json (object &optional (stream *standard-output*))
   (yason:with-output (stream :indent t)
     (encode-object object)))
+
+(defun json-true-p (yason-bool)
+  (if (eq yason-bool 'yason:false)
+      nil
+      yason-bool))
+
+(defun to-json-boolean (value)
+  (if value
+      'yason:true
+      'yason:false))
 
 (defmacro ensure-mutually-exclusive (a b)
   `(progn
