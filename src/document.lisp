@@ -63,11 +63,13 @@
             :reader routing)
    (shard-preference :initarg :shard-preference
                      :initform nil)
-   (refresh-when-get :initarg :refresh
-                     :initform nil)
+   (refresh :initarg :refresh
+            :initform nil)
    (parent :initarg :parent
            :initform nil
-           :reader parent-of)))
+           :reader parent-of)
+   (fields :initarg :fields
+           :initform nil)))
 
 (defmethod print-object ((obj <document>) stream)
    (print-unreadable-object (obj stream :type t :identity t)
@@ -95,7 +97,7 @@
 (define-condition document-exists (error) ())
 
 (defmethod get-query-params ((this <document>))
-  (with-slots (routing shard-preference refresh-when-get version) this
+  (with-slots (routing shard-preference refresh version fields) this
     (let ((parameters nil))
       (when routing
         (push (cons "routing" routing)
@@ -103,11 +105,14 @@
       (when shard-preference
         (push (cons "preference" shard-preference)
               parameters))
-      (when refresh-when-get
-        (push (cons "refresh" refresh-when-get)
+      (when refresh
+        (push (cons "refresh" "true")
               parameters))
       (when version
         (push (cons "version" (format nil "~D" version))
+              parameters))
+      (when fields
+        (push (cons "fields" (comma-join fields))
               parameters)))))
 
 ;; CRUD methods
@@ -181,7 +186,7 @@
 
 ;; Utilities
 
-(defun document-with-id (id &key routing preference refresh version source)
+(defun document-with-id (id &key routing preference refresh version fields source)
   (make-instance '<document>
                  :id id
                  :routing routing
@@ -193,14 +198,16 @@
                                (null nil))
                  :refresh refresh
                  :version version
+                 :fields fields
                  :source source))
 
-(defun document-by-id (place id &key routing preference refresh version)
+(defun document-by-id (place id &key routing preference refresh version fields)
   (get* place (document-with-id id
                                 :routing routing
                                 :preference preference
                                 :refresh refresh
-                                :version version)))
+                                :version version
+                                :fields fields)))
 
 (defmacro define-source-accessors ((arg class) &body bindings)
   `(progn ,@(loop for binding in bindings collect

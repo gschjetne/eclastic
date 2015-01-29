@@ -36,6 +36,7 @@
            :json-true-p
            :to-json-boolean
            :hash-table-keyword-plist
+           :comma-join
            :send-request))
 
 (in-package :eclastic.util)
@@ -79,6 +80,10 @@
                (setf (getf plist (intern (string-upcase key)
                                          :keyword)) value)) table)
     plist))
+
+(defun comma-join (list)
+  (with-output-to-string (s)
+    (funcall (formatter "~{~A~^,~}") s list)))
 
 (defun send-request (uri method &key data parameters)
   (let ((*text-content-types*
