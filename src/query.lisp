@@ -114,7 +114,8 @@
                    <boolean-query>
                    <field-query>
                    <zero-terms-query>
-                   <cutoff-frequency-query>)
+                   <cutoff-frequency-query>
+                   <boost-query>)
   ((match-type :initarg :match-type
                :reader match-type)))
 
@@ -130,14 +131,16 @@
           (encode-object-element* "cutoff_frequency"
                                   (cutoff-frequency this))
           (encode-object-element* "fuzziness"
-                                  (fuzziness this)))))))
+                                  (fuzziness this))
+          (encode-object-element* "boost" (boost this)))))))
 
 (defun match (query-string field &key
                                    operator
                                    (type :match)
                                    fuzziness
                                    zero-terms-query
-                                   cutoff-frequency)
+                                   cutoff-frequency
+                                   boost)
   (make-instance '<match>
                  :query-string query-string
                  :search-field field
@@ -155,7 +158,8 @@
                                      (ecase zero-terms-query
                                        (:none "none")
                                        (:all "all")))
-                 :cutoff-frequency cutoff-frequency))
+                 :cutoff-frequency cutoff-frequency
+                 :boost boost))
 
 (defclass <bool> (<boost-query> <filter> <minimum-should-match-query>)
   ((must :initarg :must
