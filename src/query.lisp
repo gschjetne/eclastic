@@ -41,6 +41,7 @@
            :<range>
            :<has-child>
            :<has-parent>
+           :<prefix>
            :match
            :bool
            :filtered
@@ -49,7 +50,8 @@
            :ids
            :range
            :has-child
-           :has-parent))
+           :has-parent
+           :prefix))
 
 (in-package :eclastic.query)
 
@@ -357,3 +359,23 @@
                                (ecase score-mode
                                  (:score "score")
                                  (:none "none")))))
+
+(defclass <prefix> (<string-query>
+                    <field-query>
+                    <boost-query>
+                    <filter>) ())
+
+(defmethod encode-slots progn ((this <prefix>))
+  (with-object-element ("prefix")
+    (with-object ()
+      (with-object-element ((search-field this))
+        (with-object ()
+          (encode-object-element "value" (query-string this))
+          (unless (in-filter-position-p this)
+            (encode-object-element* "boost" (boost this))))))))
+
+(defun prefix (query-string fiheld &key boost)
+  (make-instance '<prefix>
+                 :query-string query-string
+                 :search-field field
+                 :boost boost))
