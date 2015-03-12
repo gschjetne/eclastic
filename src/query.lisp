@@ -374,7 +374,7 @@
           (unless (in-filter-position-p this)
             (encode-object-element* "boost" (boost this))))))))
 
-(defun prefix (query-string fiheld &key boost)
+(defun prefix (query-string field &key boost)
   (make-instance '<prefix>
                  :query-string query-string
                  :search-field field
