@@ -172,7 +172,7 @@
         (encode-subquery (must this)))
       (with-object-element* ("must_not" (must-not this))
         (encode-subquery (must-not this)))
-      (with-object-element* ("should" (must-not this))
+      (with-object-element* ("should" (should this))
         (encode-subquery (should this)))
       (encode-object-element* "minimum_should_match"
                               (minimum-should-match this))
