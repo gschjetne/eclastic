@@ -34,6 +34,7 @@
                 :*json-output*)
   (:export :<match>
            :<bool>
+           :<boosting>
            :<filtered>
            :<terms>
            :<match-all>
@@ -44,6 +45,7 @@
            :<prefix>
            :match
            :bool
+           :boosting
            :filtered
            :terms
            :match-all
@@ -191,6 +193,29 @@
                  :should should
                  :minimum-should-match minimum-should-match
                  :boost boost))
+
+(defclass <boosting> (<query>)
+  ((positive :initarg :positive
+             :reader positive)
+   (negative :initarg :negative
+             :reader negative)
+   (negative-boost :initarg :negative-boost
+                   :reader negative-boost)))
+
+(defmethod encode-slots progn ((this <boosting>))
+  (with-object-element ("boosting")
+    (with-object ()
+      (with-object-element ("positive")
+        (encode-subquery (positive this)))
+      (with-object-element ("negative")
+        (encode-subquery (negative this)))
+      (encode-object-element "negative_boost" (negative-boost this)))))
+
+(defun boosting (positive negative negative-boost)
+  (make-instance '<boosting>
+                 :negative negative
+                 :positive positive
+                 :negative-boost negative-boost))
 
 (defclass <filtered> (<query>)
   ((query :initarg :query
