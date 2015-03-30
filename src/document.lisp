@@ -113,7 +113,8 @@
               parameters))
       (when fields
         (push (cons "fields" (comma-join fields))
-              parameters)))))
+              parameters))
+      parameters)))
 
 ;; CRUD methods
 
