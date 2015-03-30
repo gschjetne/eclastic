@@ -131,12 +131,14 @@
     (hash-to-document result)))
 
 (defmethod index ((place <type>) (document <document>))
-  (let ((result
-         (send-request
-          (format nil "~A/~A" (get-uri place) (document-id document))
-          :put
-          :data (with-output-to-string (s)
-                  (yason:encode (document-source document) s)))))
+  (multiple-value-bind (result status)
+      (send-request
+       (format nil "~A/~A" (get-uri place) (document-id document))
+       :put
+       :data (with-output-to-string (s)
+               (yason:encode (document-source document) s))
+       :parameters (get-query-params document))
+    (when (= 409 status) (error 'version-conflict))
     (hash-to-document result)))
 
 (defmethod create ((place <type>) (document <document>))
@@ -174,6 +176,7 @@
                  (encode-object-element* "detect_noop" detect-noop)))
        :parameters (get-query-params document))
     (when (= 404 status) (warn 'document-not-found))
+    (when (= 409 status) (error 'version-conflict))
     (hash-to-document result)))
 
 (defmethod delete* ((place <type>) (document <document>))
