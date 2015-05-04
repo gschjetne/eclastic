@@ -40,6 +40,7 @@
            :<match-all>
            :<ids>
            :<range>
+           :<geo-shape>
            :<has-child>
            :<has-parent>
            :<prefix>
@@ -51,6 +52,7 @@
            :match-all
            :ids
            :range
+           :geo-envelope
            :has-child
            :has-parent
            :prefix))
@@ -331,6 +333,39 @@
                  :lte lte
                  :lt lt))
 
+(defmethod encode-slots progn ((this <has-child>))
+  (with-object-element ("has_child")
+    (with-object ()
+      (with-object-element ("query")
+        (encode-object (subquery this)))
+      (encode-object-element "type" (document-type this))
+      (encode-object-element* "score_mode" (score-mode this))
+      (encode-object-element* "min_children" (min-children this))
+      (encode-object-element* "max_children" (max-children this)))))
+
+(defclass <geo-shape> (<field-query> <filter>)
+  ((shape-type :initarg :type
+               :reader shape-type)
+   (coordinates :initarg :coordinates
+                :reader coordinates)))
+
+(defmethod encode-slots progn ((this <geo-shape>))
+  (with-object-element ("geo_shape")
+    (with-object ()
+      (with-object-element ((search-field this))
+        (with-object ()
+          (with-object-element ("shape")
+            (with-object ()
+              (encode-object-element "type" (shape-type this))
+              (encode-object-element* "coordinates" (coordinates this)))))))))
+
+(defun geo-envelope (field lon1 lat1 lon2 lat2)
+  (make-instance '<geo-shape>
+                 :search-field field
+                 :type "envelope"
+                 :coordinates (list (list lon1 lat1)
+                                    (list lon2 lat2))))
+
 (defclass <parent-child> (<filter> <score-mode-query>)
   ((query :initarg :query
           :reader subquery)
@@ -342,16 +377,6 @@
                  :reader min-children)
    (max-children :initarg :max-children
                  :reader max-children)))
-
-(defmethod encode-slots progn ((this <has-child>))
-  (with-object-element ("has_child")
-    (with-object ()
-      (with-object-element ("query")
-        (encode-object (subquery this)))
-      (encode-object-element "type" (document-type this))
-      (encode-object-element* "score_mode" (score-mode this))
-      (encode-object-element* "min_children" (min-children this))
-      (encode-object-element* "max_children" (max-children this)))))
 
 (defun has-child (child-type query &key min-children max-children score-mode)
   (make-instance '<has-child>
