@@ -4,6 +4,13 @@
    These are the humble beginnings of an elasticseach client in
    Common Lisp.
 
+** Work in Progress
+   I intend to re-write large portions of the library soon, to more
+   easily support a greater set of Elasticsearch features.
+
+   If you want to use this for production, drop me a message for the
+   latest status.
+
 ** Examples
 *** Setup
     Tell Eclastic of a place to send requests, whether a server, an
