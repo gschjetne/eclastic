@@ -44,6 +44,7 @@
            :<has-child>
            :<has-parent>
            :<prefix>
+           :<geo-bounding-box>
            :match
            :bool
            :boosting
@@ -55,7 +56,8 @@
            :geo-envelope
            :has-child
            :has-parent
-           :prefix))
+           :prefix
+           :geo-bounding-box))
 
 (in-package :eclastic.query)
 
@@ -333,16 +335,6 @@
                  :lte lte
                  :lt lt))
 
-(defmethod encode-slots progn ((this <has-child>))
-  (with-object-element ("has_child")
-    (with-object ()
-      (with-object-element ("query")
-        (encode-object (subquery this)))
-      (encode-object-element "type" (document-type this))
-      (encode-object-element* "score_mode" (score-mode this))
-      (encode-object-element* "min_children" (min-children this))
-      (encode-object-element* "max_children" (max-children this)))))
-
 (defclass <geo-shape> (<field-query> <filter>)
   ((shape-type :initarg :type
                :reader shape-type)
@@ -377,6 +369,16 @@
                  :reader min-children)
    (max-children :initarg :max-children
                  :reader max-children)))
+
+(defmethod encode-slots progn ((this <has-child>))
+  (with-object-element ("has_child")
+    (with-object ()
+      (with-object-element ("query")
+        (encode-object (subquery this)))
+      (encode-object-element "type" (document-type this))
+      (encode-object-element* "score_mode" (score-mode this))
+      (encode-object-element* "min_children" (min-children this))
+      (encode-object-element* "max_children" (max-children this)))))
 
 (defun has-child (child-type query &key min-children max-children score-mode)
   (make-instance '<has-child>
@@ -429,3 +431,23 @@
                  :query-string query-string
                  :search-field field
                  :boost boost))
+
+(defclass <geo-bounding-box> (<filter> <field-query>)
+  ((top-left :initarg :top-left
+             :reader top-left)
+   (bottom-right :initarg :bottom-right
+                 :reader bottom-right)))
+
+(defmethod encode-slots progn ((this <geo-bounding-box>))
+  (with-object-element ("geo_bounding_box")
+    (with-object ()
+      (with-object-element ((search-field this))
+        (with-object ()
+          (encode-object-element "top_left" (top-left this))
+          (encode-object-element "bottom_right" (bottom-right this)))))))
+
+(defun geo-bounding-box (field top left bottom right)
+  (make-instance '<geo-bounding-box>
+                 :search-field field
+                 :top-left (list left top)
+                 :bottom-right (list right bottom)))
