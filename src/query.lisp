@@ -44,6 +44,7 @@
            :<has-child>
            :<has-parent>
            :<prefix>
+           :<wildcard>
            :<geo-bounding-box>
            :match
            :bool
@@ -57,6 +58,7 @@
            :has-child
            :has-parent
            :prefix
+           :wildcard
            :geo-bounding-box))
 
 (in-package :eclastic.query)
@@ -431,6 +433,18 @@
                  :query-string query-string
                  :search-field field
                  :boost boost))
+
+(defclass <wildcard> (<string-query> <field-query>) ())
+
+(defmethod encode-slots progn ((this <wildcard>))
+  (with-object-element ("wildcard")
+    (with-object ()
+      (encode-object-element (search-field this) (query-string this)))))
+
+(defun wildcard (query-string field)
+  (make-instance '<wildcard>
+                 :query-string query-string
+                 :search-field field))
 
 (defclass <geo-bounding-box> (<filter> <field-query>)
   ((top-left :initarg :top-left
